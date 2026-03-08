@@ -1,0 +1,32 @@
+# Core API
+fastapi
+uvicorn
+python-multipart
+
+# Database
+sqlalchemy
+asyncpg
+pydantic
+pydantic-settings
+python-dotenv
+
+# HTTP Client
+httpx
+requests
+
+# Auth
+bcrypt
+pyjwt
+google-auth
+google-auth-oauthlib
+
+# Image Processing
+pillow
+pillow-heif
+pymupdf
+
+# Google (GenAI)
+google-genai
+
+# AWS
+boto3

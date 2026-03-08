@@ -1,0 +1,44 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.env
+node_modules
+dist
+dist-ssr
+*.local
+
+
+# Python / Server
+server/credentials.json
+server/token.json
+server/credentials/
+server/uploads/
+__pycache__/
+*.pyc
+.venv/
+
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Python / Server
+credentials.json
+token.json
+credentials/
+uploads/
+__pycache__/
+*.pyc
+.venv/
