@@ -206,7 +206,7 @@ Receipt Upload
 ### Frontend Setup
 ```bash
 npm install
-npm run dev          # http://localhost:5173
+npm run dev          # http://localhost:8080
 ```
 
 ### Backend Setup
@@ -222,7 +222,19 @@ python -m uvicorn server.main:app --reload --port 8000
 
 ### Environment Variables
 
-All credentials are stored in `.env` at the project root:
+All credentials are stored in `.env` at the project root and backend folder:
+
+Copy the `.env.EXAMPLE` file to `.env` and fill in the values.
+```bash
+cp .env.EXAMPLE .env
+```
+
+```bash
+cd backend
+cp .env.EXAMPLE .env
+```
+
+
 
 | Variable | Service | Required |
 |---|---|---|
@@ -241,4 +253,4 @@ All credentials are stored in `.env` at the project root:
 - Touch-friendly targets (min 44 × 44 px), readable text (min 14 px)
 
 
-**Built with ❤️ for Emirati Marshals × Abu Dhabi Sports Council**
+**Built with ❤️ for Emirati Marshals**
