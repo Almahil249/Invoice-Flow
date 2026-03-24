@@ -1,6 +1,6 @@
 # Invoice Processing System
 
-AI-Powered, bilingual (English/Arabic) invoice processing application built with React + Vite (frontend) and Python + FastAPI (backend). Features dual-OCR processing with LLM validation, PostgreSQL storage, and Google Drive image management.
+AI-Powered, bilingual (English/Arabic) invoice processing application built with React + Vite (frontend) and Python + FastAPI (backend). Features Multi-OCR processing with LLM validation, PostgreSQL storage, and Google Drive image management.
 
 ![](src/assets/Screens.png)
 
