@@ -29,7 +29,6 @@ export default function AdminInvoices() {
   const queryClient = useQueryClient();
   const { teams: teamsData } = useTeams();
   const [searchInput, setSearchInput] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [teamFilter, setTeamFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
@@ -44,11 +43,29 @@ export default function AdminInvoices() {
   const [modalMode, setModalMode] = useState<ModalMode>("view");
   const [isExporting, setIsExporting] = useState(false);
 
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => { setDebouncedSearch(searchInput); setPage(1); }, 300);
-    return () => clearTimeout(timer);
-  }, [searchInput]);
+  // States that actually trigger fetch
+  const [appliedFilters, setAppliedFilters] = useState({
+    search: "",
+    status: "all",
+    team: "all",
+    dateFrom: "",
+    dateTo: "",
+    amountMin: "",
+    amountMax: "",
+  });
+
+  const applyFilters = () => {
+    setAppliedFilters({
+      search: searchInput,
+      status: statusFilter,
+      team: teamFilter,
+      dateFrom,
+      dateTo,
+      amountMin,
+      amountMax,
+    });
+    setPage(1);
+  };
 
   const handleSort = (field: SortField) => {
     if (sortBy === field) {
@@ -77,14 +94,14 @@ export default function AdminInvoices() {
   );
 
   const { data } = useQuery({
-    queryKey: ["invoices", debouncedSearch, statusFilter, teamFilter, dateFrom, dateTo, amountMin, amountMax, sortBy, sortOrder, page],
+    queryKey: ["invoices", appliedFilters, sortBy, sortOrder, page],
     queryFn: () => getInvoices({
-      search: debouncedSearch, status: statusFilter, team: teamFilter,
+      search: appliedFilters.search, status: appliedFilters.status, team: appliedFilters.team,
       page, page_size: PAGE_SIZE,
-      date_from: dateFrom || undefined,
-      date_to: dateTo || undefined,
-      amount_min: amountMin ? parseFloat(amountMin) : undefined,
-      amount_max: amountMax ? parseFloat(amountMax) : undefined,
+      date_from: appliedFilters.dateFrom || undefined,
+      date_to: appliedFilters.dateTo || undefined,
+      amount_min: appliedFilters.amountMin ? parseFloat(appliedFilters.amountMin) : undefined,
+      amount_max: appliedFilters.amountMax ? parseFloat(appliedFilters.amountMax) : undefined,
       sort_by: sortBy,
       sort_order: sortOrder,
     }),
@@ -162,13 +179,13 @@ export default function AdminInvoices() {
     setIsExporting(true);
     try {
       await exportCSV({
-        search: debouncedSearch,
-        status: statusFilter,
-        team: teamFilter,
-        date_from: dateFrom || undefined,
-        date_to: dateTo || undefined,
-        amount_min: amountMin ? parseFloat(amountMin) : undefined,
-        amount_max: amountMax ? parseFloat(amountMax) : undefined,
+        search: appliedFilters.search,
+        status: appliedFilters.status,
+        team: appliedFilters.team,
+        date_from: appliedFilters.dateFrom || undefined,
+        date_to: appliedFilters.dateTo || undefined,
+        amount_min: appliedFilters.amountMin ? parseFloat(appliedFilters.amountMin) : undefined,
+        amount_max: appliedFilters.amountMax ? parseFloat(appliedFilters.amountMax) : undefined,
       });
       toast({ title: "Export Started", description: "Your CSV download should begin shortly." });
     } catch {
@@ -213,6 +230,13 @@ export default function AdminInvoices() {
     setDateTo("");
     setAmountMin("");
     setAmountMax("");
+    setAppliedFilters((prev) => ({
+      ...prev,
+      dateFrom: "",
+      dateTo: "",
+      amountMin: "",
+      amountMax: "",
+    }));
     setPage(1);
   };
 
@@ -331,7 +355,7 @@ export default function AdminInvoices() {
               <Input value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={t("admin.search")} className="ps-10" />
             </div>
-            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v)}>
               <SelectTrigger className="w-full sm:w-40 bg-background">
                 <Filter className="h-4 w-4 me-2" /><SelectValue />
               </SelectTrigger>
@@ -343,7 +367,7 @@ export default function AdminInvoices() {
                 <SelectItem value="rejected">Rejected</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={teamFilter} onValueChange={(v) => { setTeamFilter(v); setPage(1); }}>
+            <Select value={teamFilter} onValueChange={(v) => setTeamFilter(v)}>
               <SelectTrigger className="w-full sm:w-48 bg-background"><SelectValue /></SelectTrigger>
               <SelectContent className="bg-popover z-50">
                 <SelectItem value="all">All Teams</SelectItem>
@@ -360,6 +384,9 @@ export default function AdminInvoices() {
               Filters
               {hasAdvancedFilters && <span className="ml-1 w-2 h-2 rounded-full bg-accent inline-block" />}
             </Button>
+            <Button onClick={applyFilters} size="sm" className="whitespace-nowrap bg-primary text-primary-foreground">
+              Apply Filters
+            </Button>
           </div>
 
           {/* Advanced Filters Row */}
@@ -370,7 +397,7 @@ export default function AdminInvoices() {
                 <Input
                   type="date"
                   value={dateFrom}
-                  onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+                  onChange={(e) => setDateFrom(e.target.value)}
                   className="bg-background"
                 />
               </div>
@@ -379,7 +406,7 @@ export default function AdminInvoices() {
                 <Input
                   type="date"
                   value={dateTo}
-                  onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+                  onChange={(e) => setDateTo(e.target.value)}
                   className="bg-background"
                 />
               </div>
@@ -391,7 +418,7 @@ export default function AdminInvoices() {
                   min="0"
                   placeholder="0.00"
                   value={amountMin}
-                  onChange={(e) => { setAmountMin(e.target.value); setPage(1); }}
+                  onChange={(e) => setAmountMin(e.target.value)}
                   className="bg-background"
                 />
               </div>
@@ -403,7 +430,7 @@ export default function AdminInvoices() {
                   min="0"
                   placeholder="0.00"
                   value={amountMax}
-                  onChange={(e) => { setAmountMax(e.target.value); setPage(1); }}
+                  onChange={(e) => setAmountMax(e.target.value)}
                   className="bg-background"
                 />
               </div>

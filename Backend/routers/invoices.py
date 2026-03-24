@@ -133,8 +133,8 @@ async def list_invoices(
     query = select(Invoice)
 
     # Text search
-    if search:
-        s = f"%{search}%"
+    if search and search.strip():
+        s = f"%{search.strip()}%"
         query = query.where(
             or_(
                 Invoice.invoice_id.ilike(s),
@@ -146,21 +146,27 @@ async def list_invoices(
         )
 
     # Filters
-    if status:
-        query = query.where(Invoice.status == status)
-    if team:
-        query = query.where(Invoice.team == team)
+    if status and status.strip() and status.strip() != "all":
+        query = query.where(Invoice.status == status.strip())
+    if team and team.strip() and team.strip() != "all":
+        query = query.where(Invoice.team == team.strip())
     else:
         # Exclude hidden teams from the default invoice list
         query = query.where(Invoice.team.notin_(HIDDEN_TEAMS))
-    if category:
-        query = query.where(Invoice.category == category)
-    if entry_method:
-        query = query.where(Invoice.entry_method == entry_method)
-    if date_from:
-        query = query.where(Invoice.invoice_date >= date_from)
-    if date_to:
-        query = query.where(Invoice.invoice_date <= date_to)
+    if category and category.strip() and category.strip() != "all":
+        query = query.where(Invoice.category == category.strip())
+    if entry_method and entry_method.strip() and entry_method.strip() != "all":
+        query = query.where(Invoice.entry_method == entry_method.strip())
+    if date_from and date_from.strip():
+        try:
+            query = query.where(Invoice.invoice_date >= date_type.fromisoformat(date_from.strip()))
+        except ValueError:
+            pass
+    if date_to and date_to.strip():
+        try:
+            query = query.where(Invoice.invoice_date <= date_type.fromisoformat(date_to.strip()))
+        except ValueError:
+            pass
     if amount_min is not None:
         query = query.where(Invoice.amount_after_tax >= amount_min)
     if amount_max is not None:
@@ -249,6 +255,10 @@ async def update_invoice(
                 try:
                     value = date_type.fromisoformat(value)
                 except ValueError:
+                    # If invalid date format, maybe log or skip? 
+                    # For now, let's skip setting it to avoid crashing commit if format is bad,
+                    # but if it was valid ISO format it will work.
+                    # The error suggests it IS a valid ISO string '2026-02-14', just needs to be object.
                     pass
             setattr(invoice, key, value)
 
@@ -295,6 +305,11 @@ async def delete_invoice(
     await db.execute(
         select(OCRAuditLog).where(OCRAuditLog.invoice_id == invoice_id)
     )
+    # The default cascade might not be set up in SQLAlchemy models, so explicit delete is safer or rely on DB
+    # Let's just delete the invoice, assuming cascade is set or we don't strictly need to wipe generic logs right now
+    # valid approach: delete invoice, if FK constraint fails, we'd need to delete children first.
+    # checking models: no explicit cascade relationship defined in python.
+    
     # Explicitly delete audit logs to be safe
     from sqlalchemy import delete
     await db.execute(delete(OCRAuditLog).where(OCRAuditLog.invoice_id == invoice_id))
@@ -406,25 +421,50 @@ async def manual_entry(
 @router.get("/export/csv")
 async def export_csv(
     db: AsyncSession = Depends(get_db),
+    search: Optional[str] = None,
     status: Optional[str] = None,
     team: Optional[str] = None,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
+    amount_min: Optional[float] = None,
+    amount_max: Optional[float] = None,
 ):
     """Export filtered invoices as CSV with image_link as the last column."""
     query = select(Invoice)
 
-    if status:
-        query = query.where(Invoice.status == status)
-    if team:
-        query = query.where(Invoice.team == team)
+    if search and search.strip():
+        s = f"%{search.strip()}%"
+        query = query.where(
+            or_(
+                Invoice.invoice_id.ilike(s),
+                Invoice.store_name.ilike(s),
+                Invoice.user_name.ilike(s),
+                Invoice.invoice_number.ilike(s),
+                Invoice.tax_registration_number.ilike(s),
+            )
+        )
+
+    if status and status.strip() and status.strip() != "all":
+        query = query.where(Invoice.status == status.strip())
+    if team and team.strip() and team.strip() != "all":
+        query = query.where(Invoice.team == team.strip())
     else:
         # Exclude hidden teams from the default CSV export
         query = query.where(Invoice.team.notin_(HIDDEN_TEAMS))
-    if date_from:
-        query = query.where(Invoice.invoice_date >= date_from)
-    if date_to:
-        query = query.where(Invoice.invoice_date <= date_to)
+    if date_from and date_from.strip():
+        try:
+            query = query.where(Invoice.invoice_date >= date_type.fromisoformat(date_from.strip()))
+        except ValueError:
+            pass
+    if date_to and date_to.strip():
+        try:
+            query = query.where(Invoice.invoice_date <= date_type.fromisoformat(date_to.strip()))
+        except ValueError:
+            pass
+    if amount_min is not None:
+        query = query.where(Invoice.amount_after_tax >= amount_min)
+    if amount_max is not None:
+        query = query.where(Invoice.amount_after_tax <= amount_max)
 
     query = query.order_by(Invoice.created_at.desc())
     

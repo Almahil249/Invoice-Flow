@@ -2,7 +2,7 @@
 InvoiceFlow Backend — FastAPI Application Entry Point.
 
 Run with:
-    cd d:\\Files\\source\\invoice-flow-backend
+    cd invoice-flow-backend
     uvicorn main:app --reload --port 8000
 """
 
