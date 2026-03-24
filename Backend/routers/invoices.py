@@ -502,6 +502,12 @@ async def export_csv(
             if "original_image_url" in row and "image_link" not in row:
                  row["image_link"] = row["original_image_url"]
             
+            # Format numbers as Excel-safe text formulas (='1234') to prevent precision loss on very large digits
+            if row.get("invoice_number"):
+                row["invoice_number"] = f'="{row["invoice_number"]}"'
+            if row.get("tax_registration_number"):
+                row["tax_registration_number"] = f'="{row["tax_registration_number"]}"'
+            
             writer.writerow(row)
             yield output.getvalue()
             output.seek(0)
